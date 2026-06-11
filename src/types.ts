@@ -33,16 +33,6 @@ export interface Screenshot {
   game?: Game;
 }
 
-export interface Flow {
-  id: string;
-  gameId: string;
-  fromScreenId: string;
-  toScreenId: string;
-  action: string;
-  orderIndex: number;
-  createdAt: string;
-}
-
 export interface AppSettings {
   id: 'default';
   features: string[];
@@ -67,4 +57,4 @@ export interface ScreenshotMetadataInput {
   orderIndex: number;
 }
 
-export type ViewMode = 'games' | 'gameDetail' | 'featureCompare' | 'upload' | 'settings';
+export type ViewMode = 'games' | 'gameDetail' | 'featureCompare' | 'settings';

@@ -30,16 +30,6 @@ create table if not exists public.screenshots (
   updated_at timestamptz default now()
 );
 
-create table if not exists public.flows (
-  id uuid primary key default gen_random_uuid(),
-  game_id uuid not null references public.games(id) on delete cascade,
-  from_screen_id uuid not null references public.screenshots(id) on delete cascade,
-  to_screen_id uuid not null references public.screenshots(id) on delete cascade,
-  action text default '',
-  order_index integer default 0,
-  created_at timestamptz default now()
-);
-
 create table if not exists public.app_settings (
   id text primary key default 'default',
   features text[] not null,
@@ -50,7 +40,6 @@ create table if not exists public.app_settings (
 create index if not exists screenshots_game_feature_idx on public.screenshots(game_id, feature);
 create index if not exists screenshots_feature_created_idx on public.screenshots(feature, created_at desc);
 create index if not exists screenshots_tags_idx on public.screenshots using gin(tags);
-create index if not exists flows_game_idx on public.flows(game_id, order_index);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -113,7 +102,6 @@ on conflict (id) do nothing;
 
 alter table public.games enable row level security;
 alter table public.screenshots enable row level security;
-alter table public.flows enable row level security;
 alter table public.app_settings enable row level security;
 
 drop policy if exists "Allow public read games" on public.games;
@@ -125,12 +113,6 @@ using (true);
 drop policy if exists "Allow public read screenshots" on public.screenshots;
 create policy "Allow public read screenshots"
 on public.screenshots for select
-to anon, authenticated
-using (true);
-
-drop policy if exists "Allow public read flows" on public.flows;
-create policy "Allow public read flows"
-on public.flows for select
 to anon, authenticated
 using (true);
 

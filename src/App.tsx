@@ -1,10 +1,9 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Columns, Gamepad2, ImagePlus, Settings} from 'lucide-react';
+import {Columns, Gamepad2, Settings} from 'lucide-react';
 import EditLock from './components/EditLock';
 import FeatureCompare from './components/FeatureCompare';
 import GameDetail from './components/GameDetail';
 import GameList from './components/GameList';
-import ScreenshotUpload from './components/ScreenshotUpload';
 import SettingsPanel from './components/SettingsPanel';
 import {EDIT_UNLOCK_KEY, DEFAULT_FEATURES} from './constants';
 import {fetchAppSettings, fetchGames, isSupabaseConfigured} from './lib/supabaseClient';
@@ -17,7 +16,6 @@ export default function App() {
   const [games, setGames] = useState<Game[]>([]);
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [uploadDefaultGameId, setUploadDefaultGameId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<Toast>(null);
   const [editUnlocked, setEditUnlocked] = useState(false);
@@ -67,7 +65,8 @@ export default function App() {
 
   async function handleUploaded(gameId: string) {
     await loadInitialData();
-    openGame(gameId);
+    setSelectedGameId(gameId);
+    setView('gameDetail');
   }
 
   async function handleFeaturesChanged(nextFeatures: string[]) {
@@ -86,7 +85,6 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-2">
             <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 className="h-4 w-4" />} label="게임" />
             <NavButton active={view === 'featureCompare'} onClick={() => setView('featureCompare')} icon={<Columns className="h-4 w-4" />} label="기능 비교" />
-            <NavButton active={view === 'upload'} onClick={() => { setUploadDefaultGameId(selectedGameId); setView('upload'); }} icon={<ImagePlus className="h-4 w-4" />} label="업로드" />
             <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={<Settings className="h-4 w-4" />} label="설정" />
             <EditLock editUnlocked={editUnlocked} onUnlocked={handleUnlocked} onLocked={handleLocked} onMessage={showMessage} />
           </div>
@@ -102,7 +100,7 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-4 py-6">
         {!isSupabaseConfigured && (
           <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-            Supabase 환경변수가 아직 설정되지 않았습니다. `.env` 또는 Cloudflare Pages 환경 변수에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 입력하면 데이터를 불러옵니다.
+            Supabase 환경변수가 아직 설정되지 않았습니다. Cloudflare Pages 환경 변수에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 입력한 뒤 재배포해주세요.
           </div>
         )}
 
@@ -110,53 +108,25 @@ export default function App() {
           <div className="rounded-3xl bg-white/80 p-10 text-center font-bold text-stone-500">초기 데이터를 불러오는 중...</div>
         ) : (
           <>
-            {view === 'games' && (
-              <GameList
-                games={games}
-                editUnlocked={editUnlocked}
-                adminPassword={adminPassword}
-                onSelectGame={openGame}
-                onRefresh={loadInitialData}
-                onMessage={showMessage}
-              />
-            )}
+            {view === 'games' && <GameList games={games} onSelectGame={openGame} />}
             {view === 'gameDetail' && selectedGame && (
               <GameDetail
                 game={selectedGame}
-                games={games}
                 features={features}
-                editUnlocked={editUnlocked}
-                adminPassword={adminPassword}
                 onBack={() => setView('games')}
-                onUpload={(gameId) => {
-                  setUploadDefaultGameId(gameId);
-                  setView('upload');
-                }}
                 onMessage={showMessage}
-                onRefreshGames={loadInitialData}
               />
             )}
-            {view === 'gameDetail' && !selectedGame && (
-              <GameList games={games} editUnlocked={editUnlocked} adminPassword={adminPassword} onSelectGame={openGame} onRefresh={loadInitialData} onMessage={showMessage} />
-            )}
+            {view === 'gameDetail' && !selectedGame && <GameList games={games} onSelectGame={openGame} />}
             {view === 'featureCompare' && <FeatureCompare games={games} features={features} onMessage={showMessage} />}
-            {view === 'upload' && (
-              <ScreenshotUpload
-                games={games}
-                features={features}
-                defaultGameId={uploadDefaultGameId}
-                editUnlocked={editUnlocked}
-                adminPassword={adminPassword}
-                onUploaded={handleUploaded}
-                onMessage={showMessage}
-              />
-            )}
             {view === 'settings' && (
               <SettingsPanel
                 games={games}
                 features={features}
                 editUnlocked={editUnlocked}
                 adminPassword={adminPassword}
+                onRefreshGames={loadInitialData}
+                onUploaded={handleUploaded}
                 onFeaturesChanged={handleFeaturesChanged}
                 onMessage={showMessage}
               />

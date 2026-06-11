@@ -9,7 +9,7 @@ React/Vite + Supabase + Cloudflare Pages Functions 기반의 내부용 게임 UI
 - Cloudflare Pages Functions에서만 업로드/수정/삭제 처리
 - `ADMIN_PASSWORD` 서버 검증 기반 편집 잠금
 - 브라우저에서 업로드 이미지 WebP/JPEG 압축 후 전송
-- 스크린샷 간 UI 플로우 연결
+- 이미지 중심의 게임별/기능별 레퍼런스 탐색
 
 ## 환경 변수
 

@@ -1,6 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
 import {DEFAULT_FEATURES, STORAGE_BUCKET} from '../constants';
-import type {AppSettings, Flow, Game, Screenshot} from '../types';
+import type {AppSettings, Game, Screenshot} from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -43,16 +43,6 @@ type DbScreenshot = {
   created_at: string;
   updated_at: string;
   games?: DbGame | null;
-};
-
-type DbFlow = {
-  id: string;
-  game_id: string;
-  from_screen_id: string;
-  to_screen_id: string;
-  action: string | null;
-  order_index: number | null;
-  created_at: string;
 };
 
 type DbSettings = {
@@ -102,18 +92,6 @@ export function mapScreenshot(row: DbScreenshot): Screenshot {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     game: row.games ? mapGame(row.games) : undefined,
-  };
-}
-
-export function mapFlow(row: DbFlow): Flow {
-  return {
-    id: row.id,
-    gameId: row.game_id,
-    fromScreenId: row.from_screen_id,
-    toScreenId: row.to_screen_id,
-    action: row.action ?? '',
-    orderIndex: row.order_index ?? 0,
-    createdAt: row.created_at,
   };
 }
 
@@ -173,20 +151,6 @@ export async function fetchGameScreenshots(gameId: string) {
     throw error;
   }
   return (data ?? []).map((row) => mapScreenshot(row as DbScreenshot));
-}
-
-export async function fetchGameFlows(gameId: string) {
-  const {data, error} = await supabase
-    .from('flows')
-    .select('*')
-    .eq('game_id', gameId)
-    .order('order_index', {ascending: true})
-    .order('created_at', {ascending: true});
-
-  if (error) {
-    throw error;
-  }
-  return (data ?? []).map((row) => mapFlow(row as DbFlow));
 }
 
 export interface ScreenshotSearchFilters {

@@ -92,21 +92,6 @@ export async function deleteScreenshot(password: string, id: string) {
   return jsonRequest<{ok: boolean}>('/api/screenshots', 'DELETE', {password, id});
 }
 
-export async function createFlow(
-  password: string,
-  input: {gameId: string; fromScreenId: string; toScreenId: string; action: string; orderIndex: number},
-) {
-  return jsonRequest<{ok: boolean}>('/api/flows', 'POST', {password, flow: input});
-}
-
-export async function updateFlow(password: string, id: string, input: {action: string; orderIndex: number}) {
-  return jsonRequest<{ok: boolean}>('/api/flows', 'PATCH', {password, id, flow: input});
-}
-
-export async function deleteFlow(password: string, id: string) {
-  return jsonRequest<{ok: boolean}>('/api/flows', 'DELETE', {password, id});
-}
-
 export async function updateSettings(password: string, features: string[]) {
   return jsonRequest<{ok: boolean}>('/api/settings', 'PATCH', {password, features});
 }

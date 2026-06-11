@@ -76,6 +76,24 @@ export function mapGame(row: DbGame): Game {
   };
 }
 
+function applyTitleImages(games: Game[], screenshots: DbScreenshot[]) {
+  const byGameId = new Map<string, DbScreenshot>();
+  for (const screenshot of screenshots) {
+    if (!byGameId.has(screenshot.game_id)) {
+      byGameId.set(screenshot.game_id, screenshot);
+    }
+  }
+
+  return games.map((game) => {
+    const titleScreen = byGameId.get(game.id);
+    return {
+      ...game,
+      titleImagePath: titleScreen?.image_path ?? null,
+      titleThumbPath: titleScreen?.thumb_path ?? null,
+    };
+  });
+}
+
 export function mapScreenshot(row: DbScreenshot): Screenshot {
   return {
     id: row.id,
@@ -124,7 +142,25 @@ export async function fetchGames() {
   if (error) {
     throw error;
   }
-  return (data ?? []).map((row) => mapGame(row as DbGame));
+
+  const games = (data ?? []).map((row) => mapGame(row as DbGame));
+  if (games.length === 0) {
+    return games;
+  }
+
+  const {data: titleScreens, error: titleError} = await supabase
+    .from('screenshots')
+    .select('*')
+    .eq('feature', '타이틀')
+    .in('game_id', games.map((game) => game.id))
+    .order('order_index', {ascending: true})
+    .order('created_at', {ascending: true});
+
+  if (titleError) {
+    throw titleError;
+  }
+
+  return applyTitleImages(games, (titleScreens ?? []) as DbScreenshot[]);
 }
 
 export async function fetchAppSettings() {

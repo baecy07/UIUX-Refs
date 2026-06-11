@@ -10,6 +10,8 @@ export interface Game {
   description: string;
   coverImagePath: string | null;
   coverThumbPath: string | null;
+  titleImagePath?: string | null;
+  titleThumbPath?: string | null;
   sortOrder: number;
   screenshotCount?: number;
   createdAt: string;

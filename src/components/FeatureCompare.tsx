@@ -1,9 +1,9 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {ChevronLeft, ChevronRight, Columns} from 'lucide-react';
 import {LAST_FEATURE_KEY, PAGE_SIZE} from '../constants';
 import {fetchScreenshotsByFeature, getPublicImageUrl} from '../lib/supabaseClient';
 import type {Game, Screenshot} from '../types';
-import ImageLightbox from './ImageLightbox';
+import ImageLightbox, {type LightboxItem} from './ImageLightbox';
 
 interface FeatureCompareProps {
   games: Game[];
@@ -17,7 +17,7 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
   const [page, setPage] = useState(0);
   const [count, setCount] = useState(0);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
-  const [selectedScreenshot, setSelectedScreenshot] = useState<Screenshot | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function load() {
@@ -27,6 +27,7 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
       const result = await fetchScreenshotsByFeature({feature, gameId, page, pageSize: PAGE_SIZE});
       setScreenshots(result.screenshots);
       setCount(result.count);
+      setSelectedIndex(null);
     } catch (error) {
       onMessage(error instanceof Error ? error.message : '기능별 데이터를 불러오지 못했습니다.', 'error');
     } finally {
@@ -38,6 +39,12 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
     void load();
   }, [feature, gameId, page]);
 
+  const lightboxItems: LightboxItem[] = useMemo(() => screenshots.map((screenshot) => ({
+    id: screenshot.id,
+    imageUrl: getPublicImageUrl(screenshot.imagePath),
+    alt: `${screenshot.game?.name || '게임'} ${screenshot.feature}`,
+  })), [screenshots]);
+
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
   return (
@@ -45,7 +52,7 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
       <div className="rounded-[28px] border border-stone-200 bg-white/85 p-6 shadow-sm">
         <div className="grid gap-4 lg:grid-cols-[minmax(260px,0.8fr)_minmax(220px,0.45fr)_1fr] lg:items-end">
           <div>
-            <label className="text-sm font-black text-stone-800">분석 대상 기능 선택:</label>
+            <label className="text-sm font-black text-stone-800">분석 대상 기능 선택</label>
             <select
               className="mt-3 w-full rounded-2xl border border-stone-300 bg-white px-4 py-4 text-base font-black text-stone-950"
               value={feature}
@@ -59,7 +66,7 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
           </div>
 
           <div>
-            <label className="text-sm font-black text-stone-800">게임 선택:</label>
+            <label className="text-sm font-black text-stone-800">게임 선택</label>
             <select
               className="mt-3 w-full rounded-2xl border border-stone-300 bg-white px-4 py-4 text-base font-bold text-stone-800"
               value={gameId}
@@ -100,7 +107,7 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           {screenshots.map((screenshot, index) => (
-            <button key={screenshot.id} type="button" onClick={() => setSelectedScreenshot(screenshot)} className="group text-left">
+            <button key={screenshot.id} type="button" onClick={() => setSelectedIndex(index)} className="group text-left">
               <div className="bg-[#050608]">
                 <img
                   src={getPublicImageUrl(screenshot.imagePath || screenshot.thumbPath)}
@@ -123,11 +130,11 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
         </div>
       )}
 
-      {selectedScreenshot && (
+      {selectedIndex !== null && lightboxItems.length > 0 && (
         <ImageLightbox
-          imageUrl={getPublicImageUrl(selectedScreenshot.imagePath)}
-          alt={`${selectedScreenshot.game?.name || '게임'} ${selectedScreenshot.feature}`}
-          onClose={() => setSelectedScreenshot(null)}
+          items={lightboxItems}
+          initialIndex={selectedIndex}
+          onClose={() => setSelectedIndex(null)}
         />
       )}
     </section>

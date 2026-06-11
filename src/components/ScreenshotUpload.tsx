@@ -140,6 +140,7 @@ export default function ScreenshotUpload({games, features, defaultGameId, editUn
       <div className="rounded-3xl border border-dashed border-stone-300 bg-white/70 p-8 text-center">
         <ImagePlus className="mx-auto h-10 w-10 text-stone-400" />
         <p className="mt-3 font-black text-stone-900">편집 잠금을 해제하면 업로드할 수 있습니다.</p>
+        <p className="mt-1 text-sm text-stone-500">보기 전용 모드에서는 업로드와 삭제가 제한됩니다.</p>
       </div>
     );
   }
@@ -198,12 +199,18 @@ export default function ScreenshotUpload({games, features, defaultGameId, editUn
       </div>
 
       <aside className="space-y-3 rounded-3xl border border-stone-200 bg-white p-5">
-        <select className="w-full rounded-xl border border-stone-300 px-3 py-2" value={gameId} onChange={(event) => setGameId(event.target.value)}>
-          {games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}
-        </select>
-        <select className="w-full rounded-xl border border-stone-300 px-3 py-2" value={feature} onChange={(event) => setFeature(event.target.value)}>
-          {features.map((item) => <option key={item}>{item}</option>)}
-        </select>
+        <label className="block">
+          <span className="text-sm font-black text-stone-800">게임</span>
+          <select className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2" value={gameId} onChange={(event) => setGameId(event.target.value)}>
+            {games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-black text-stone-800">기능</span>
+          <select className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2" value={feature} onChange={(event) => setFeature(event.target.value)}>
+            {features.map((item) => <option key={item}>{item}</option>)}
+          </select>
+        </label>
         <input className="w-full rounded-xl border border-stone-300 px-3 py-2" type="number" value={orderIndex} onChange={(event) => setOrderIndex(Number(event.target.value))} placeholder="시작 정렬 순서" />
         <input className="w-full rounded-xl border border-stone-300 px-3 py-2" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="태그, 쉼표로 구분" />
         <textarea className="min-h-32 w-full rounded-xl border border-stone-300 px-3 py-2" value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="메모" />

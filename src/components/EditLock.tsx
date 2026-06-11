@@ -73,7 +73,7 @@ export default function EditLock({editUnlocked, onUnlocked, onLocked, onMessage}
           <label className="text-sm font-bold text-stone-800" htmlFor="admin-password">
             편집 잠금 해제
           </label>
-          <p className="mt-1 text-xs leading-5 text-stone-500">업로드/수정/삭제는 서버에서 비밀번호를 확인한 뒤에만 가능합니다.</p>
+          <p className="mt-1 text-xs leading-5 text-stone-500">업로드, 수정, 삭제는 서버에서 비밀번호를 확인한 뒤에만 가능합니다.</p>
           <input
             id="admin-password"
             type="password"

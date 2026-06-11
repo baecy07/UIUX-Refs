@@ -2,7 +2,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {ArrowLeft, ImageIcon, RefreshCw} from 'lucide-react';
 import {fetchGameScreenshots, getPublicImageUrl} from '../lib/supabaseClient';
 import type {Game, Screenshot} from '../types';
-import ImageLightbox from './ImageLightbox';
+import ImageLightbox, {type LightboxItem} from './ImageLightbox';
 
 interface GameDetailProps {
   game: Game;
@@ -11,10 +11,12 @@ interface GameDetailProps {
   onMessage: (message: string, type?: 'success' | 'error') => void;
 }
 
+const ALL_FEATURES = '__all__';
+
 export default function GameDetail({game, features, onBack, onMessage}: GameDetailProps) {
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
-  const [selectedFeature, setSelectedFeature] = useState('전체');
-  const [selectedScreenshot, setSelectedScreenshot] = useState<Screenshot | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState(ALL_FEATURES);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [sortMode, setSortMode] = useState<'order' | 'recent'>('order');
 
@@ -30,11 +32,13 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
   }
 
   useEffect(() => {
+    setSelectedFeature(ALL_FEATURES);
+    setSelectedIndex(null);
     void loadGameData();
   }, [game.id]);
 
   const sorted = useMemo(() => {
-    const list = selectedFeature === '전체' ? screenshots : screenshots.filter((item) => item.feature === selectedFeature);
+    const list = selectedFeature === ALL_FEATURES ? screenshots : screenshots.filter((item) => item.feature === selectedFeature);
     return [...list].sort((a, b) => {
       if (sortMode === 'recent') {
         return b.createdAt.localeCompare(a.createdAt);
@@ -44,7 +48,7 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
   }, [screenshots, selectedFeature, sortMode]);
 
   const grouped = useMemo(() => {
-    if (selectedFeature !== '전체') {
+    if (selectedFeature !== ALL_FEATURES) {
       return [{feature: selectedFeature, items: sorted}];
     }
 
@@ -59,6 +63,17 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
       .map(([feature, items]) => ({feature, items}));
   }, [features, selectedFeature, sorted]);
 
+  const lightboxItems: LightboxItem[] = useMemo(() => sorted.map((screenshot) => ({
+    id: screenshot.id,
+    imageUrl: getPublicImageUrl(screenshot.imagePath),
+    alt: `${game.name} ${screenshot.feature}`,
+  })), [game.name, sorted]);
+
+  function openScreenshot(screenshot: Screenshot) {
+    const index = sorted.findIndex((item) => item.id === screenshot.id);
+    setSelectedIndex(Math.max(0, index));
+  }
+
   return (
     <section className="space-y-6">
       <div className="rounded-[28px] border border-stone-200 bg-white/85 p-6 shadow-sm">
@@ -72,7 +87,7 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">{game.platform}</span>
               <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">{game.orientation}</span>
-              <span className="rounded-full bg-stone-100 px-3 py-1 text-stone-700">{game.genre || '장르 미지정'}</span>
+              <span className="rounded-full bg-stone-100 px-3 py-1 text-stone-700">{game.genre || '장르 미입력'}</span>
               <span className="rounded-full bg-stone-100 px-3 py-1 text-stone-700">{screenshots.length}장</span>
             </div>
           </div>
@@ -83,23 +98,21 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
       </div>
 
       <div className="rounded-[28px] border border-stone-200 bg-white/85 p-4 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {['전체', ...features].map((feature) => (
-              <button
-                key={feature}
-                type="button"
-                onClick={() => setSelectedFeature(feature)}
-                className={`rounded-full px-3 py-1.5 text-sm font-bold ${selectedFeature === feature ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
-              >
-                {feature}
-              </button>
-            ))}
-          </div>
-          <select className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-bold" value={sortMode} onChange={(event) => setSortMode(event.target.value as 'order' | 'recent')}>
-            <option value="order">정렬 순서</option>
-            <option value="recent">최근 등록</option>
-          </select>
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px]">
+          <label className="block">
+            <span className="text-sm font-black text-stone-800">기능 필터</span>
+            <select className="mt-2 w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-bold text-stone-800" value={selectedFeature} onChange={(event) => setSelectedFeature(event.target.value)}>
+              <option value={ALL_FEATURES}>전체 기능</option>
+              {features.map((feature) => <option key={feature} value={feature}>{feature}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-black text-stone-800">정렬</span>
+            <select className="mt-2 w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-bold text-stone-800" value={sortMode} onChange={(event) => setSortMode(event.target.value as 'order' | 'recent')}>
+              <option value="order">정렬 순서</option>
+              <option value="recent">최근 등록</option>
+            </select>
+          </label>
         </div>
       </div>
 
@@ -115,7 +128,7 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
         <div className="space-y-10">
           {grouped.map((group) => (
             <section key={group.feature} className="space-y-4">
-              {selectedFeature === '전체' && (
+              {selectedFeature === ALL_FEATURES && (
                 <div className="flex items-center gap-3">
                   <h3 className="text-xl font-black text-stone-950">{group.feature}</h3>
                   <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-600">{group.items.length}장</span>
@@ -126,14 +139,14 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
                   <button
                     key={screenshot.id}
                     type="button"
-                    onClick={() => setSelectedScreenshot(screenshot)}
+                    onClick={() => openScreenshot(screenshot)}
                     className="group text-left"
                   >
                     <div className="bg-[#050608]">
                       <img
-                        src={getPublicImageUrl(screenshot.thumbPath)}
+                        src={getPublicImageUrl(screenshot.imagePath || screenshot.thumbPath)}
                         alt={`${game.name} ${screenshot.feature}`}
-                        className="h-auto max-h-[520px] w-full object-contain transition duration-200 group-hover:brightness-110"
+                        className="block h-auto max-h-[620px] w-full object-contain transition duration-200 group-hover:brightness-110"
                       />
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-4">
@@ -151,11 +164,11 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
         </div>
       )}
 
-      {selectedScreenshot && (
+      {selectedIndex !== null && lightboxItems.length > 0 && (
         <ImageLightbox
-          imageUrl={getPublicImageUrl(selectedScreenshot.imagePath)}
-          alt={`${game.name} ${selectedScreenshot.feature}`}
-          onClose={() => setSelectedScreenshot(null)}
+          items={lightboxItems}
+          initialIndex={selectedIndex}
+          onClose={() => setSelectedIndex(null)}
         />
       )}
     </section>

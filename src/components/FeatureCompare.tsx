@@ -55,7 +55,7 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
       <form onSubmit={handleSearch} className="rounded-[28px] border border-stone-200 bg-white/85 p-6 shadow-sm">
         <div className="grid gap-4 lg:grid-cols-[minmax(260px,0.8fr)_1fr] lg:items-end">
           <div>
-            <label className="text-sm font-black text-stone-800">분석 대상 인터랙션 기능 선택:</label>
+            <label className="text-sm font-black text-stone-800">분석 대상 기능 선택:</label>
             <select className="mt-3 w-full rounded-2xl border border-stone-300 bg-white px-4 py-4 text-base font-black text-stone-950" value={feature} onChange={(event) => { setPage(0); setFeature(event.target.value); }}>
               {features.map((item) => <option key={item}>{item}</option>)}
             </select>
@@ -107,26 +107,24 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
           <p className="mt-1 text-sm text-stone-500">필터를 줄이거나 설정에서 해당 기능의 스크린샷을 업로드해주세요.</p>
         </div>
       ) : (
-        <div className="grid gap-10">
+        <div className="grid gap-6 lg:grid-cols-2">
           {screenshots.map((screenshot, index) => (
             <button key={screenshot.id} type="button" onClick={() => setSelectedScreenshot(screenshot)} className="group text-left">
-              <div className="inline-block max-w-full">
-                <div className="bg-[#050608]">
-                  <img
-                    src={getPublicImageUrl(screenshot.thumbPath)}
-                    alt={`${screenshot.game?.name || '게임'} ${screenshot.feature}`}
-                    className="max-h-[560px] max-w-full object-contain transition duration-200 group-hover:brightness-110"
-                  />
+              <div className="bg-[#050608]">
+                <img
+                  src={getPublicImageUrl(screenshot.thumbPath)}
+                  alt={`${screenshot.game?.name || '게임'} ${screenshot.feature}`}
+                  className="h-auto max-h-[560px] w-full object-contain transition duration-200 group-hover:brightness-110"
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-lg font-black text-stone-950">{screenshot.game?.name || 'Unknown Game'}</p>
+                  <p className="text-sm font-bold text-stone-500">{screenshot.feature}</p>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-lg font-black text-stone-950">{screenshot.game?.name || 'Unknown Game'}</p>
-                    <p className="text-sm font-bold text-stone-500">{screenshot.feature}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {screenshot.tags.slice(0, 2).map((item) => <span key={item} className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">#{item}</span>)}
-                    <span className="rounded-md bg-stone-950 px-2 py-1 text-xs font-bold text-white">#{index + 1}</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  {screenshot.tags.slice(0, 2).map((item) => <span key={item} className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">#{item}</span>)}
+                  <span className="rounded-md bg-stone-950 px-2 py-1 text-xs font-bold text-white">#{index + 1}</span>
                 </div>
               </div>
             </button>

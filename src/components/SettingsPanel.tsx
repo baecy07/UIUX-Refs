@@ -1,8 +1,9 @@
 import {FormEvent, useEffect, useState} from 'react';
-import {Download, Gamepad2, Plus, Settings, Trash2, Upload} from 'lucide-react';
+import {Download, Gamepad2, ImageIcon, Plus, Settings, Trash2, Upload} from 'lucide-react';
 import {DEFAULT_FEATURES, ORIENTATIONS, PLATFORMS} from '../constants';
-import {createGame, deleteGame, updateGame, updateSettings} from '../lib/apiClient';
-import type {Game, GameFormInput, Orientation, Platform} from '../types';
+import {createGame, deleteGame, deleteScreenshot, updateGame, updateSettings} from '../lib/apiClient';
+import {fetchGameScreenshots, getPublicImageUrl} from '../lib/supabaseClient';
+import type {Game, GameFormInput, Orientation, Platform, Screenshot} from '../types';
 import ScreenshotUpload from './ScreenshotUpload';
 
 interface SettingsPanelProps {
@@ -25,7 +26,7 @@ const EMPTY_FORM: GameFormInput = {
   sortOrder: 0,
 };
 
-type SettingsTab = 'upload' | 'games' | 'features' | 'export';
+type SettingsTab = 'upload' | 'screenshots' | 'games' | 'features' | 'export';
 
 export default function SettingsPanel({
   games,
@@ -42,11 +43,37 @@ export default function SettingsPanel({
   const [newFeature, setNewFeature] = useState('');
   const [form, setForm] = useState<GameFormInput>(EMPTY_FORM);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const [managedGameId, setManagedGameId] = useState(games[0]?.id || '');
+  const [managedScreenshots, setManagedScreenshots] = useState<Screenshot[]>([]);
+  const [manageLoading, setManageLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setDraftFeatures(features);
   }, [features]);
+
+  useEffect(() => {
+    if (!managedGameId && games[0]) {
+      setManagedGameId(games[0].id);
+    }
+  }, [games, managedGameId]);
+
+  useEffect(() => {
+    if (activeTab === 'screenshots' && managedGameId) {
+      void loadManagedScreenshots(managedGameId);
+    }
+  }, [activeTab, managedGameId]);
+
+  async function loadManagedScreenshots(gameId: string) {
+    setManageLoading(true);
+    try {
+      setManagedScreenshots(await fetchGameScreenshots(gameId));
+    } catch (error) {
+      onMessage(error instanceof Error ? error.message : '이미지 목록을 불러오지 못했습니다.', 'error');
+    } finally {
+      setManageLoading(false);
+    }
+  }
 
   function startEditGame(game: Game) {
     setEditingGame(game);
@@ -109,6 +136,32 @@ export default function SettingsPanel({
     }
   }
 
+  async function handleDeleteScreenshot(screenshot: Screenshot) {
+    if (!editUnlocked) {
+      onMessage('편집 잠금을 해제해야 이미지를 삭제할 수 있습니다.', 'error');
+      return;
+    }
+    if (!confirm('이 이미지를 삭제할까요? Supabase Storage의 원본과 썸네일도 함께 삭제됩니다.')) {
+      return;
+    }
+    if (!confirm('최종 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteScreenshot(adminPassword, screenshot.id);
+      onMessage('이미지가 삭제되었습니다.', 'success');
+      if (managedGameId) {
+        await loadManagedScreenshots(managedGameId);
+      }
+      await onRefreshGames();
+    } catch (error) {
+      onMessage(error instanceof Error ? error.message : '이미지 삭제 실패', 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveFeatures(nextFeatures = draftFeatures) {
     if (!editUnlocked) {
       onMessage('편집 잠금을 해제해야 설정을 변경할 수 있습니다.', 'error');
@@ -157,9 +210,10 @@ export default function SettingsPanel({
       <div className="rounded-[28px] border border-stone-200 bg-white/85 p-5 shadow-sm">
         <p className="text-sm font-bold text-emerald-700">Settings</p>
         <h2 className="mt-1 text-2xl font-black text-stone-950">설정</h2>
-        <p className="mt-1 text-sm text-stone-500">게임 등록, 스크린샷 업로드, 기능 프리셋을 이곳에서 관리합니다.</p>
+        <p className="mt-1 text-sm text-stone-500">게임 등록, 이미지 업로드/삭제, 기능 프리셋을 관리합니다.</p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <TabButton active={activeTab === 'upload'} onClick={() => setActiveTab('upload')} icon={<Upload className="h-4 w-4" />} label="스크린샷 업로드" />
+          <TabButton active={activeTab === 'upload'} onClick={() => setActiveTab('upload')} icon={<Upload className="h-4 w-4" />} label="이미지 업로드" />
+          <TabButton active={activeTab === 'screenshots'} onClick={() => setActiveTab('screenshots')} icon={<ImageIcon className="h-4 w-4" />} label="이미지 관리" />
           <TabButton active={activeTab === 'games'} onClick={() => setActiveTab('games')} icon={<Gamepad2 className="h-4 w-4" />} label="게임 관리" />
           <TabButton active={activeTab === 'features'} onClick={() => setActiveTab('features')} icon={<Settings className="h-4 w-4" />} label="기능 프리셋" />
           <TabButton active={activeTab === 'export'} onClick={() => setActiveTab('export')} icon={<Download className="h-4 w-4" />} label="내보내기" />
@@ -175,6 +229,59 @@ export default function SettingsPanel({
           onUploaded={onUploaded}
           onMessage={onMessage}
         />
+      )}
+
+      {activeTab === 'screenshots' && (
+        <div className="rounded-[28px] border border-stone-200 bg-white/85 p-5 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-xl font-black text-stone-950">이미지 관리</h3>
+              <p className="mt-1 text-sm text-stone-500">업로드된 이미지를 게임별로 확인하고 삭제합니다.</p>
+            </div>
+            <select className="rounded-xl border border-stone-300 bg-white px-3 py-2" value={managedGameId} onChange={(event) => setManagedGameId(event.target.value)}>
+              {games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}
+            </select>
+          </div>
+
+          {manageLoading ? (
+            <p className="mt-6 rounded-2xl bg-stone-50 p-6 text-center text-sm font-bold text-stone-500">이미지 목록을 불러오는 중...</p>
+          ) : managedScreenshots.length === 0 ? (
+            <p className="mt-6 rounded-2xl bg-stone-50 p-6 text-center text-sm font-bold text-stone-500">등록된 이미지가 없습니다.</p>
+          ) : (
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {managedScreenshots.map((screenshot) => (
+                <article key={screenshot.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+                  <div className="flex h-48 items-center justify-center bg-black p-2">
+                    <img src={getPublicImageUrl(screenshot.thumbPath)} alt={screenshot.feature} className="max-h-full max-w-full object-contain" />
+                  </div>
+                  <div className="space-y-3 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-stone-950">{screenshot.feature}</p>
+                        <p className="text-xs text-stone-500">정렬 {screenshot.orderIndex} · {screenshot.width ?? '-'}x{screenshot.height ?? '-'}</p>
+                      </div>
+                      {editUnlocked && (
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteScreenshot(screenshot)}
+                          disabled={busy}
+                          className="rounded-xl border border-red-200 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-40"
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                    {screenshot.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {screenshot.tags.slice(0, 4).map((tag) => <span key={tag} className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-600">#{tag}</span>)}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === 'games' && (
@@ -282,4 +389,4 @@ function TabButton({active, onClick, icon, label}: {active: boolean; onClick: ()
       {label}
     </button>
   );
-}
+} 

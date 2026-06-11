@@ -33,7 +33,7 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
     void loadGameData();
   }, [game.id]);
 
-  const filtered = useMemo(() => {
+  const sorted = useMemo(() => {
     const list = selectedFeature === '전체' ? screenshots : screenshots.filter((item) => item.feature === selectedFeature);
     return [...list].sort((a, b) => {
       if (sortMode === 'recent') {
@@ -42,6 +42,22 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
       return a.orderIndex - b.orderIndex || a.createdAt.localeCompare(b.createdAt);
     });
   }, [screenshots, selectedFeature, sortMode]);
+
+  const grouped = useMemo(() => {
+    if (selectedFeature !== '전체') {
+      return [{feature: selectedFeature, items: sorted}];
+    }
+
+    const knownOrder = new Map(features.map((feature, index) => [feature, index]));
+    const groups = new Map<string, Screenshot[]>();
+    for (const screenshot of sorted) {
+      groups.set(screenshot.feature, [...(groups.get(screenshot.feature) ?? []), screenshot]);
+    }
+
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => (knownOrder.get(a) ?? 999) - (knownOrder.get(b) ?? 999) || a.localeCompare(b))
+      .map(([feature, items]) => ({feature, items}));
+  }, [features, selectedFeature, sorted]);
 
   return (
     <section className="space-y-6">
@@ -89,38 +105,48 @@ export default function GameDetail({game, features, onBack, onMessage}: GameDeta
 
       {loading ? (
         <div className="rounded-[28px] bg-white/80 p-10 text-center font-bold text-stone-500">불러오는 중...</div>
-      ) : filtered.length === 0 ? (
+      ) : sorted.length === 0 ? (
         <div className="rounded-[28px] border border-dashed border-stone-300 bg-white/75 p-10 text-center">
           <ImageIcon className="mx-auto h-10 w-10 text-stone-400" />
           <p className="mt-3 font-bold text-stone-800">스크린샷이 없습니다.</p>
           <p className="mt-1 text-sm text-stone-500">설정에서 스크린샷을 업로드해주세요.</p>
         </div>
       ) : (
-        <div className="grid gap-8">
-          {filtered.map((screenshot, index) => (
-            <button
-              key={screenshot.id}
-              type="button"
-              onClick={() => setSelectedScreenshot(screenshot)}
-              className="group text-left"
-            >
-              <div className="inline-block max-w-full">
-                <div className="bg-[#050608] p-0">
-                  <img
-                    src={getPublicImageUrl(screenshot.thumbPath)}
-                    alt={`${game.name} ${screenshot.feature}`}
-                    className="max-h-[520px] max-w-full object-contain transition duration-200 group-hover:brightness-110"
-                  />
+        <div className="space-y-10">
+          {grouped.map((group) => (
+            <section key={group.feature} className="space-y-4">
+              {selectedFeature === '전체' && (
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-black text-stone-950">{group.feature}</h3>
+                  <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-600">{group.items.length}장</span>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-lg font-black text-stone-950">{game.name}</p>
-                    <p className="text-sm font-bold text-stone-500">{screenshot.feature}</p>
-                  </div>
-                  <span className="rounded-md bg-stone-950 px-2 py-1 text-xs font-bold text-white">#{index + 1}</span>
-                </div>
+              )}
+              <div className="grid gap-6 lg:grid-cols-2">
+                {group.items.map((screenshot, index) => (
+                  <button
+                    key={screenshot.id}
+                    type="button"
+                    onClick={() => setSelectedScreenshot(screenshot)}
+                    className="group text-left"
+                  >
+                    <div className="bg-[#050608]">
+                      <img
+                        src={getPublicImageUrl(screenshot.thumbPath)}
+                        alt={`${game.name} ${screenshot.feature}`}
+                        className="h-auto max-h-[520px] w-full object-contain transition duration-200 group-hover:brightness-110"
+                      />
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-lg font-black text-stone-950">{game.name}</p>
+                        <p className="text-sm font-bold text-stone-500">{screenshot.feature}</p>
+                      </div>
+                      <span className="rounded-md bg-stone-950 px-2 py-1 text-xs font-bold text-white">#{index + 1}</span>
+                    </div>
+                  </button>
+                ))}
               </div>
-            </button>
+            </section>
           ))}
         </div>
       )}

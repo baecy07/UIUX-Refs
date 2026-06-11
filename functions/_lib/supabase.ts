@@ -38,10 +38,6 @@ export async function readJson(request: Request) {
   return (await request.json().catch(() => ({}))) as Record<string, unknown>;
 }
 
-export function sanitizeFilePart(value: string) {
-  return value.replace(/[^a-zA-Z0-9가-힣._-]+/g, '-').slice(0, 80) || 'screenshot';
-}
-
 export function toTags(value: unknown) {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);

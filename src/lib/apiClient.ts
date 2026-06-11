@@ -80,7 +80,7 @@ export async function uploadScreenshot(input: UploadScreenshotInput) {
 }
 
 function imageFileName(originalName: string, suffix: string) {
-  const base = originalName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9가-힣_-]+/g, '-');
+  const base = originalName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-');
   return `${base || 'screenshot'}-${suffix}.webp`;
 }
 

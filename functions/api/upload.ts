@@ -1,10 +1,11 @@
-import {BUCKET, getServiceClient, json, requireAdmin, sanitizeFilePart, toNumber, toTags, type Env} from '../_lib/supabase';
+import {BUCKET, getServiceClient, json, requireAdmin, toNumber, toTags, type Env} from '../_lib/supabase';
 
 export const onRequestPost: PagesFunction<Env> = async ({request, env}) => {
   const formData = await request.formData();
   if (!requireAdmin(env, formData.get('password'))) {
     return json({error: '관리자 비밀번호가 올바르지 않습니다.'}, {status: 401});
   }
+
   const image = formData.get('image');
   const thumbnail = formData.get('thumbnail');
   const gameId = formData.get('game_id');
@@ -18,9 +19,8 @@ export const onRequestPost: PagesFunction<Env> = async ({request, env}) => {
   const supabase = getServiceClient(env);
   const now = new Date();
   const id = crypto.randomUUID();
-  const fileBase = sanitizeFilePart(title);
-  const imagePath = `${gameId}/${now.getFullYear()}/${id}-${fileBase}.webp`;
-  const thumbPath = `${gameId}/${now.getFullYear()}/${id}-${fileBase}-thumb.webp`;
+  const imagePath = `${gameId}/${now.getFullYear()}/${id}.webp`;
+  const thumbPath = `${gameId}/${now.getFullYear()}/${id}-thumb.webp`;
 
   const imageUpload = await supabase.storage.from(BUCKET).upload(imagePath, image, {
     contentType: image.type || 'image/webp',

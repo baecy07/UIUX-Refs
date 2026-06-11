@@ -1,5 +1,5 @@
-import {FormEvent, useEffect, useState} from 'react';
-import {ChevronLeft, ChevronRight, Columns, Search} from 'lucide-react';
+import {useEffect, useState} from 'react';
+import {ChevronLeft, ChevronRight, Columns} from 'lucide-react';
 import {LAST_FEATURE_KEY, PAGE_SIZE} from '../constants';
 import {fetchScreenshotsByFeature, getPublicImageUrl} from '../lib/supabaseClient';
 import type {Game, Screenshot} from '../types';
@@ -14,10 +14,6 @@ interface FeatureCompareProps {
 export default function FeatureCompare({games, features, onMessage}: FeatureCompareProps) {
   const [feature, setFeature] = useState(() => sessionStorage.getItem(LAST_FEATURE_KEY) || features[2] || features[0] || '로비');
   const [gameId, setGameId] = useState('');
-  const [platform, setPlatform] = useState('');
-  const [orientation, setOrientation] = useState('');
-  const [tag, setTag] = useState('');
-  const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
   const [count, setCount] = useState(0);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
@@ -28,11 +24,11 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
     setLoading(true);
     try {
       sessionStorage.setItem(LAST_FEATURE_KEY, feature);
-      const result = await fetchScreenshotsByFeature({feature, gameId, platform, orientation, tag, query, page, pageSize: PAGE_SIZE});
+      const result = await fetchScreenshotsByFeature({feature, gameId, page, pageSize: PAGE_SIZE});
       setScreenshots(result.screenshots);
       setCount(result.count);
     } catch (error) {
-      onMessage(error instanceof Error ? error.message : '비교 데이터를 불러오지 못했습니다.', 'error');
+      onMessage(error instanceof Error ? error.message : '기능별 데이터를 불러오지 못했습니다.', 'error');
     } finally {
       setLoading(false);
     }
@@ -40,53 +36,48 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
 
   useEffect(() => {
     void load();
-  }, [feature, gameId, platform, orientation, tag, page]);
-
-  function handleSearch(event: FormEvent) {
-    event.preventDefault();
-    setPage(0);
-    void load();
-  }
+  }, [feature, gameId, page]);
 
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
   return (
     <section className="space-y-8">
-      <form onSubmit={handleSearch} className="rounded-[28px] border border-stone-200 bg-white/85 p-6 shadow-sm">
-        <div className="grid gap-4 lg:grid-cols-[minmax(260px,0.8fr)_1fr] lg:items-end">
+      <div className="rounded-[28px] border border-stone-200 bg-white/85 p-6 shadow-sm">
+        <div className="grid gap-4 lg:grid-cols-[minmax(260px,0.8fr)_minmax(220px,0.45fr)_1fr] lg:items-end">
           <div>
             <label className="text-sm font-black text-stone-800">분석 대상 기능 선택:</label>
-            <select className="mt-3 w-full rounded-2xl border border-stone-300 bg-white px-4 py-4 text-base font-black text-stone-950" value={feature} onChange={(event) => { setPage(0); setFeature(event.target.value); }}>
+            <select
+              className="mt-3 w-full rounded-2xl border border-stone-300 bg-white px-4 py-4 text-base font-black text-stone-950"
+              value={feature}
+              onChange={(event) => {
+                setPage(0);
+                setFeature(event.target.value);
+              }}
+            >
               {features.map((item) => <option key={item}>{item}</option>)}
             </select>
           </div>
-          <p className="text-right text-sm font-bold text-stone-500">검색 결과: <span className="text-stone-950">{count}개</span>의 레퍼런스가 나열되었습니다.</p>
-        </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <select className="rounded-xl border border-stone-300 px-3 py-2" value={gameId} onChange={(event) => { setPage(0); setGameId(event.target.value); }}>
-            <option value="">전체 게임</option>
-            {games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}
-          </select>
-          <select className="rounded-xl border border-stone-300 px-3 py-2" value={platform} onChange={(event) => { setPage(0); setPlatform(event.target.value); }}>
-            <option value="">전체 플랫폼</option>
-            <option>Mobile</option>
-            <option>PC</option>
-            <option>Console</option>
-            <option>Cross-platform</option>
-          </select>
-          <select className="rounded-xl border border-stone-300 px-3 py-2" value={orientation} onChange={(event) => { setPage(0); setOrientation(event.target.value); }}>
-            <option value="">전체 방향</option>
-            <option>Landscape</option>
-            <option>Portrait</option>
-          </select>
-          <input className="rounded-xl border border-stone-300 px-3 py-2" value={tag} onChange={(event) => setTag(event.target.value)} onBlur={() => { setPage(0); void load(); }} placeholder="태그" />
-          <div className="flex gap-2">
-            <input className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="메모 검색" />
-            <button className="rounded-xl bg-stone-900 px-3 text-white"><Search className="h-4 w-4" /></button>
+          <div>
+            <label className="text-sm font-black text-stone-800">게임 선택:</label>
+            <select
+              className="mt-3 w-full rounded-2xl border border-stone-300 bg-white px-4 py-4 text-base font-bold text-stone-800"
+              value={gameId}
+              onChange={(event) => {
+                setPage(0);
+                setGameId(event.target.value);
+              }}
+            >
+              <option value="">전체 게임</option>
+              {games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}
+            </select>
           </div>
+
+          <p className="text-right text-sm font-bold text-stone-500">
+            검색 결과: <span className="text-stone-950">{count}개</span>의 레퍼런스가 나열되었습니다.
+          </p>
         </div>
-      </form>
+      </div>
 
       <div className="flex items-center justify-end gap-2 text-sm font-bold text-stone-600">
         <button disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))} className="rounded-xl border border-stone-300 bg-white p-2 disabled:opacity-40">
@@ -104,7 +95,7 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
         <div className="rounded-[28px] border border-dashed border-stone-300 bg-white/75 p-10 text-center">
           <Columns className="mx-auto h-10 w-10 text-stone-400" />
           <p className="mt-3 font-bold text-stone-800">비교할 스크린샷이 없습니다.</p>
-          <p className="mt-1 text-sm text-stone-500">필터를 줄이거나 설정에서 해당 기능의 스크린샷을 업로드해주세요.</p>
+          <p className="mt-1 text-sm text-stone-500">설정에서 해당 기능의 스크린샷을 업로드해주세요.</p>
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
@@ -112,9 +103,9 @@ export default function FeatureCompare({games, features, onMessage}: FeatureComp
             <button key={screenshot.id} type="button" onClick={() => setSelectedScreenshot(screenshot)} className="group text-left">
               <div className="bg-[#050608]">
                 <img
-                  src={getPublicImageUrl(screenshot.thumbPath)}
+                  src={getPublicImageUrl(screenshot.imagePath || screenshot.thumbPath)}
                   alt={`${screenshot.game?.name || '게임'} ${screenshot.feature}`}
-                  className="h-auto max-h-[560px] w-full object-contain transition duration-200 group-hover:brightness-110"
+                  className="block h-auto max-h-[620px] w-full object-contain transition duration-200 group-hover:brightness-110"
                 />
               </div>
               <div className="mt-3 flex items-center justify-between gap-4">

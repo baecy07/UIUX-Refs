@@ -16,7 +16,6 @@ interface ScreenshotUploadProps {
 
 interface UploadItem {
   id: string;
-  originalName: string;
   processed: ProcessedImage;
 }
 
@@ -55,7 +54,6 @@ export default function ScreenshotUpload({games, features, defaultGameId, editUn
         const processed = await processScreenshotImage(file);
         processedItems.push({
           id: crypto.randomUUID(),
-          originalName: file.name,
           processed,
         });
       }
@@ -171,7 +169,7 @@ export default function ScreenshotUpload({games, features, defaultGameId, editUn
         >
           <UploadCloud className="h-12 w-12 text-emerald-700" />
           <p className="mt-3 font-black text-stone-900">이미지를 여러 개 드래그하거나 클릭해서 선택</p>
-          <p className="mt-1 text-sm text-stone-500">업로드 전 표시용/썸네일 이미지를 브라우저에서 압축합니다.</p>
+          <p className="mt-1 text-sm text-stone-500">업로드 전 표시용 이미지와 썸네일을 브라우저에서 압축합니다.</p>
           <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => event.target.files && void handleFiles(event.target.files)} />
         </label>
 
@@ -181,8 +179,8 @@ export default function ScreenshotUpload({games, features, defaultGameId, editUn
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {items.map((item, index) => (
               <div key={item.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-                <div className="flex h-48 items-center justify-center bg-black p-2">
-                  <img src={item.processed.thumbPreviewUrl} alt={`업로드 미리보기 ${index + 1}`} className="max-h-full max-w-full object-contain" />
+                <div className="flex h-56 items-center justify-center bg-black">
+                  <img src={item.processed.imagePreviewUrl} alt={`업로드 미리보기 ${index + 1}`} className="max-h-full max-w-full object-contain" />
                 </div>
                 <div className="flex items-center justify-between gap-3 p-3">
                   <div className="min-w-0">

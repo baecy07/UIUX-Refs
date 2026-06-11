@@ -14,8 +14,8 @@ interface ResizeOptions {
 
 export async function processScreenshotImage(file: File): Promise<ProcessedImage> {
   const bitmap = await createImageBitmap(file);
-  const display = await resizeToBlob(bitmap, {maxWidth: 1600, quality: 0.8});
-  const thumbnail = await resizeToBlob(bitmap, {maxWidth: 480, quality: 0.7});
+  const display = await resizeToBlob(bitmap, {maxWidth: 1600, quality: 0.85});
+  const thumbnail = await resizeToBlob(bitmap, {maxWidth: 640, quality: 0.82});
   bitmap.close();
 
   return {

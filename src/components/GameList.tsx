@@ -13,7 +13,7 @@ export default function GameList({games, onSelectGame}: GameListProps) {
       <div className="rounded-[28px] border border-stone-200 bg-white/85 p-6 shadow-sm">
         <p className="text-sm font-bold text-emerald-700">Game Library</p>
         <h2 className="mt-1 text-2xl font-black text-stone-950">게임 레퍼런스</h2>
-        <p className="mt-1 text-sm text-stone-500">게임을 선택해 등록된 UI 스크린샷을 이미지 중심으로 확인합니다. 대표 이미지는 타이틀 화면을 우선 사용합니다.</p>
+        <p className="mt-1 text-sm text-stone-500">게임을 선택해 등록된 UI 스크린샷을 이미지 중심으로 확인합니다.</p>
       </div>
 
       {games.length === 0 ? (
@@ -25,7 +25,7 @@ export default function GameList({games, onSelectGame}: GameListProps) {
       ) : (
         <div className="grid gap-8 xl:grid-cols-2">
           {games.map((game) => {
-            const coverPath = game.titleThumbPath || game.titleImagePath || game.coverThumbPath || game.coverImagePath;
+            const coverPath = game.titleImagePath || game.coverImagePath || game.titleThumbPath || game.coverThumbPath;
             const coverUrl = getPublicImageUrl(coverPath);
             return (
               <button
@@ -34,22 +34,24 @@ export default function GameList({games, onSelectGame}: GameListProps) {
                 onClick={() => onSelectGame(game.id)}
                 className="group overflow-hidden rounded-[30px] border border-stone-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl"
               >
-                <div className="flex h-[360px] items-center justify-center bg-[#050608] p-2 md:h-[430px]">
-                  {coverUrl ? (
+                {coverUrl ? (
+                  <div className="bg-[#050608]">
                     <img
                       src={coverUrl}
                       alt={game.name}
-                      className="h-full w-full rounded-[22px] object-contain transition duration-300 group-hover:scale-[1.01] group-hover:brightness-110"
+                      className="block h-auto w-full object-contain transition duration-300 group-hover:brightness-110"
                     />
-                  ) : (
+                  </div>
+                ) : (
+                  <div className="flex min-h-56 items-center justify-center bg-[#050608]">
                     <Gamepad2 className="h-16 w-16 text-stone-600" />
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-black text-stone-950">{game.name}</h3>
-                      <p className="mt-1 text-sm text-stone-500">{game.genre || '장르 미지정'}</p>
+                      <p className="mt-1 text-sm text-stone-500">{game.genre || '장르 미입력'}</p>
                     </div>
                     <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-600">{game.screenshotCount ?? 0}장</span>
                   </div>

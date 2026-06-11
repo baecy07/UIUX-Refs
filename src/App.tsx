@@ -5,7 +5,7 @@ import FeatureCompare from './components/FeatureCompare';
 import GameDetail from './components/GameDetail';
 import GameList from './components/GameList';
 import SettingsPanel from './components/SettingsPanel';
-import {EDIT_UNLOCK_KEY, DEFAULT_FEATURES} from './constants';
+import {DEFAULT_FEATURES, EDIT_UNLOCK_KEY} from './constants';
 import {fetchAppSettings, fetchGames, isSupabaseConfigured} from './lib/supabaseClient';
 import type {Game, ViewMode} from './types';
 
@@ -63,10 +63,8 @@ export default function App() {
     setView('gameDetail');
   }
 
-  async function handleUploaded(gameId: string) {
+  async function handleUploaded(_gameId: string) {
     await loadInitialData();
-    setSelectedGameId(gameId);
-    setView('gameDetail');
   }
 
   async function handleFeaturesChanged(nextFeatures: string[]) {
@@ -83,8 +81,8 @@ export default function App() {
             <h1 className="text-2xl font-black text-stone-950">게임 UI/UX 레퍼런스 매니저</h1>
           </button>
           <div className="flex flex-wrap items-center gap-2">
-            <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 className="h-4 w-4" />} label="게임" />
-            <NavButton active={view === 'featureCompare'} onClick={() => setView('featureCompare')} icon={<Columns className="h-4 w-4" />} label="기능 비교" />
+            <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 className="h-4 w-4" />} label="게임별" />
+            <NavButton active={view === 'featureCompare'} onClick={() => setView('featureCompare')} icon={<Columns className="h-4 w-4" />} label="기능별" />
             <NavButton active={view === 'settings'} onClick={() => setView('settings')} icon={<Settings className="h-4 w-4" />} label="설정" />
             <EditLock editUnlocked={editUnlocked} onUnlocked={handleUnlocked} onLocked={handleLocked} onMessage={showMessage} />
           </div>
@@ -100,7 +98,7 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-4 py-6">
         {!isSupabaseConfigured && (
           <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-            Supabase 환경변수가 아직 설정되지 않았습니다. Cloudflare Pages 환경 변수에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 입력한 뒤 재배포해주세요.
+            Supabase 환경변수가 아직 설정되지 않았습니다. Cloudflare Pages 환경 변수에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 입력한 뒤 다시 배포해주세요.
           </div>
         )}
 

@@ -1,10 +1,20 @@
 import type {Game, GameFormInput, ScreenshotMetadataInput} from '../types';
 
 async function parseResponse<T>(response: Response): Promise<T> {
-  const payload = (await response.json().catch(() => ({}))) as {error?: string};
-  if (!response.ok) {
-    throw new Error(payload.error || '요청 처리 중 오류가 발생했습니다.');
+  const text = await response.text();
+  let payload: {error?: string} = {};
+
+  try {
+    payload = text ? (JSON.parse(text) as {error?: string}) : {};
+  } catch {
+    payload = {};
   }
+
+  if (!response.ok) {
+    const details = payload.error || text || response.statusText || '알 수 없는 오류';
+    throw new Error(`API 오류 ${response.status}: ${details}`);
+  }
+
   return payload as T;
 }
 
@@ -82,7 +92,10 @@ export async function deleteScreenshot(password: string, id: string) {
   return jsonRequest<{ok: boolean}>('/api/screenshots', 'DELETE', {password, id});
 }
 
-export async function createFlow(password: string, input: {gameId: string; fromScreenId: string; toScreenId: string; action: string; orderIndex: number}) {
+export async function createFlow(
+  password: string,
+  input: {gameId: string; fromScreenId: string; toScreenId: string; action: string; orderIndex: number},
+) {
   return jsonRequest<{ok: boolean}>('/api/flows', 'POST', {password, flow: input});
 }
 
